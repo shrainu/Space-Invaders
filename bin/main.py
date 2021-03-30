@@ -4,7 +4,9 @@ import enum
 import json
 import random
 import pygame
+
 pygame.init()
+pygame.mixer.music.set_volume(0.5)
 
 # Sprites
 INVADER_BASIC = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_basic.png'))
@@ -15,6 +17,7 @@ INVADER_RANGER = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_
 INVADER_RANGER = pygame.transform.scale(INVADER_RANGER, (48, 48))
 INVADER_RANGER_W = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_ranger_w.png'))
 INVADER_RANGER_W = pygame.transform.scale(INVADER_RANGER_W, (48, 48))
+INVADER_RANGER_S = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_ranger.png'))
 INVADER_TANK = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_tank.png'))
 INVADER_TANK = pygame.transform.scale(INVADER_TANK, (48, 48))
 INVADER_TANK_W = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_tank_w.png'))
@@ -30,9 +33,20 @@ DEATH_SPRITE = pygame.transform.scale(DEATH_SPRITE, (48, 48))
 DEATH_SPRITE_W = pygame.image.load(os.path.join('bin', 'assets', 'blast_w.png'))
 DEATH_SPRITE_W = pygame.transform.scale(DEATH_SPRITE_W, (48, 48))
 
+# Sound effects
+SPACESHIP_FIRE = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_fire.mp3'))
+SPACESHIP_FIRE.set_volume(0.25)
+SPACESHIP_EXPLODE = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_explode.mp3'))
+SPACESHIP_EXPLODE.set_volume(0.25)
+SPACESHIP_HIT = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_hit.mp3'))
+SPACESHIP_HIT.set_volume(0.5)
+BUTTON_CLICK = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'button_click.mp3'))
+
 # Screen variables
 WIDTH, HEIGHT = 450, 450
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('SPACE INVADERS')
+pygame.display.set_icon(INVADER_RANGER_S)
 FPS = 60
 
 # Colors
@@ -40,6 +54,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
 # Fonts
 MAIN_FONT = pygame.font.Font(os.path.join('bin', 'assets', 'font', 're-do', 're-do.ttf'), 10)
@@ -55,22 +70,22 @@ level0 = [[".", ".", ".", ".", ".", ".", ".", ".", ".", "0"],
           [".", ".", ".", ".", ".", ".", ".", ".", ".", "6"],
           [".", ".", ".", ".", ".", ".", ".", ".", ".", "7"],
           [".", ".", ".", ".", ".", ".", ".", ".", ".", "8"]
-         ]
+          ]
 
 # Player variables
 VELOCITY = 5
 PLAYER_SHOT = pygame.USEREVENT + 1
 PLAYER_HIT = pygame.USEREVENT + 2
-SPRITE_CORRUPT = pygame.USEREVENT + 3
 
 
 # Scenes
 class Scenes(enum.Enum):
     main_scene = 0
     game_scene = 1
+    death_scene = 2
 
 
-# Scene manager class
+# Scene manager class ------------------------------------------------
 class SceneManager:
 
     def __init__(self, main_scene):
@@ -85,8 +100,9 @@ class SceneManager:
 
 # Enemies class to make spawning enemies here ------------------------
 class Enemies:
-
     move_dir = -1
+    all_enemies = []
+    called = False
 
     def __init__(self, pos, size, sprite, sprite_c, can_shoot=False, health=1, score=50):
         self.rect = pygame.Rect(pos, size)
@@ -97,11 +113,13 @@ class Enemies:
         self.score = score
         self._rdm = 0
         self.destroy_time = 0
+        self.decent_timer = 0
         self.move_speed = 25
-        self.next_move_time = 0
+        self.next_move_time = pygame.time.get_ticks() + 1000
         self.can_shoot = can_shoot
-        self.next_shoot_time = 1500
+        self.next_shoot_time = pygame.time.get_ticks() + 1000
         self.has_shoot = False
+        Enemies.all_enemies.append(self)
 
     def draw(self):
         WIN.blit(self.sprite_c, self.rect)
@@ -114,6 +132,7 @@ class Enemies:
                 if self._rdm > 15:
                     projectile = pygame.Rect(self.rect.center, (5, 10))
                     enemy_projectiles.append(projectile)
+                    SPACESHIP_FIRE.play()
                 self.next_shoot_time = pygame.time.get_ticks() + 1000.
 
     def change_move_dir(self):
@@ -127,8 +146,16 @@ class Enemies:
             self.rect.x += self.move_speed * Enemies.move_dir
             self.next_move_time = pygame.time.get_ticks() + 1000
 
+    def decent(self):
+        if pygame.time.get_ticks() >= self.decent_timer:
+            self.decent_timer = 0
+        if self.decent_timer == 0:
+            self.rect.y += 25
+            self.decent_timer = pygame.time.get_ticks() + 2500
+
     def take_damage(self):
         self.health -= 1
+        SPACESHIP_HIT.play()
         if self.health <= 0:
             self.self_destruct()
 
@@ -136,6 +163,7 @@ class Enemies:
         self.sprite = DEATH_SPRITE
         self.sprite_c = DEATH_SPRITE_W
         self.death = True
+        SPACESHIP_EXPLODE.play()
 
     def update(self, enemy_projectiles, enemies):
         self.change_move_dir()
@@ -151,7 +179,6 @@ class Enemies:
 
 # Button object class to make creating buttons easier ----------------
 class ButtonObject:
-
     n = 5
 
     def __init__(self, pos, size, normal_color, focus_color=None, text=None, text_color=None, text_color_var=None):
@@ -172,7 +199,7 @@ class ButtonObject:
     def draw_button(self):
         pygame.draw.rect(WIN, BLACK, self.rect, 0)
         if self.text is not None:
-            WIN.blit(self.draw_text0, ((self.rect.x + self.rect.x/10), (self.rect.y + self.rect.y/20)))
+            WIN.blit(self.draw_text0, ((self.rect.x + self.rect.x / 10), (self.rect.y + self.rect.y / 20)))
         if self.in_focus:
             pygame.draw.rect(WIN, WHITE, self.rect, 4)
             if self.text is not None:
@@ -201,6 +228,7 @@ def handle_player_input(keys_pressed, player, player_projectiles, next_shoot_tim
                 temp = pygame.Rect(player.center, (5, 10))
                 player_projectiles.append(temp)
                 pygame.event.post(pygame.event.Event(PLAYER_SHOT))
+                SPACESHIP_FIRE.play()
 
 
 # To calculate the new score after each enemy killed
@@ -209,6 +237,17 @@ def update_score(scores_arr):
     for x in scores_arr:
         n += x
     return n
+
+
+# To decent enemies when they reach the end of the screen ------------
+def decent_enemies(enemies):
+    for enemy in enemies:
+        if enemy.rect.x < 25:
+            for each in enemies:
+                each.decent()
+        elif enemy.rect.x + enemy.rect.width > 425:
+            for each in enemies:
+                each.decent()
 
 
 # To handle the collision and projectile movement --------------------
@@ -224,13 +263,15 @@ def handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, s
                     else:
                         scores_arr.append(enemy.score)
                 player_projectiles.remove(projectile)
-        if projectile.y + projectile.height < 0:
-            player_projectiles.remove(projectile)
+        if projectile is not None:
+            if projectile.y + projectile.height < -50:
+                player_projectiles.remove(projectile)
     for projectile in enemy_projectiles:
         projectile.y += 8
-        if player.colliderect(projectile):
-            enemy_projectiles.remove(projectile)
-            pygame.event.post(pygame.event.Event(PLAYER_HIT))
+        if player_health > 0:
+            if player.colliderect(projectile):
+                enemy_projectiles.remove(projectile)
+                pygame.event.post(pygame.event.Event(PLAYER_HIT))
         if projectile.y > HEIGHT:
             enemy_projectiles.remove(projectile)
 
@@ -238,15 +279,18 @@ def handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, s
 # Use this to load level from json file
 def load_level(data, enemies, level_number):
     for line in data['levels'][level_number]:
-        for i in range(len(line)-1):
+        for i in range(len(line) - 1):
             if line[i] == "#":
-                temp = Enemies((i*50, data['levels'][level_number].index(line)*50), (50, 50), INVADER_BASIC, INVADER_BASIC_W)
+                temp = Enemies((i * 50, data['levels'][level_number].index(line) * 50), (50, 50), INVADER_BASIC,
+                               INVADER_BASIC_W)
                 enemies.append(temp)
             elif line[i] == "@":
-                temp = Enemies((i * 50, data['levels'][level_number].index(line) * 50), (50, 50), INVADER_RANGER, INVADER_RANGER_W, True, score=80)
+                temp = Enemies((i * 50, data['levels'][level_number].index(line) * 50), (50, 50), INVADER_RANGER,
+                               INVADER_RANGER_W, True, score=80)
                 enemies.append(temp)
             elif line[i] == "$":
-                temp = Enemies((i * 50, data['levels'][level_number].index(line) * 50), (50, 50), INVADER_TANK, INVADER_TANK_W, True, 2, 80)
+                temp = Enemies((i * 50, data['levels'][level_number].index(line) * 50), (50, 50), INVADER_TANK,
+                               INVADER_TANK_W, False, 2, 80)
                 enemies.append(temp)
 
 
@@ -255,10 +299,26 @@ def update_display_0(buttons, mouse_collider):
     # Always at the top
     WIN.fill(BLACK)
 
+    # Buttons
     for button in buttons:
         button.draw_button()
 
-    pygame.draw.rect(WIN, (0, 0, 0, 255), mouse_collider, 0)
+    # Game title
+    title_text1_w = BIGGER_FONT.render("SPACE", True, WHITE)
+    title_text1_g = BIGGER_FONT.render("SPACE", True, GREEN)
+    title_text2_w = BIGGER_FONT.render("INVADERS", True, WHITE)
+    title_text2_r = BIGGER_FONT.render("INVADERS", True, RED)
+    WIN.blit(title_text1_w, (139, 30))
+    WIN.blit(title_text1_g, (141, 30))
+    WIN.blit(title_text2_w, (94, 60))
+    WIN.blit(title_text2_r, (96, 60))
+
+    # Shrain text
+    shrain_text = MAIN_FONT.render("A GAME BY SHRAIN", True, WHITE)
+    WIN.blit(shrain_text, (75, 400))
+
+    # Debugging purposes
+    # pygame.draw.rect(WIN, (0, 0, 0, 255), mouse_collider, 0)
 
     # Always at the bottom
     pygame.display.update()
@@ -282,7 +342,8 @@ def update_display_1(player, enemies, player_projectiles, enemy_projectiles, sco
         WIN.blit(PLAYER_SPRITE_G, (player.x + 2, player.y))
     for projectile in player_projectiles:
         pygame.draw.rect(WIN, WHITE, projectile)
-        pygame.draw.rect(WIN, GREEN, pygame.Rect((projectile.x+2, projectile.y), (projectile.width, projectile.height)))
+        pygame.draw.rect(WIN, GREEN,
+                         pygame.Rect((projectile.x + 2, projectile.y), (projectile.width, projectile.height)))
     # Player score UI
     score_text = MAIN_FONT.render("SCORE:" + str(score), True, WHITE)
     score_text_g = MAIN_FONT.render("SCORE:" + str(score), True, GREEN)
@@ -296,11 +357,25 @@ def update_display_1(player, enemies, player_projectiles, enemy_projectiles, sco
     WIN.blit(PLAYER_SPRITE_S, (387, 2))
     WIN.blit(PLAYER_SPRITE_SG, (388, 2))
 
-    if pygame.time.get_ticks() < countdown_time:
+    if pygame.time.get_ticks() < countdown_time and len(enemies) == 0:
         won_text = BIGGER_FONT.render("LEVEL WON!", True, GREEN)
         won_text_w = BIGGER_FONT.render("LEVEL WON!", True, WHITE)
         WIN.blit(won_text_w, (63, 210))
         WIN.blit(won_text, (65, 210))
+    elif pygame.time.get_ticks() < countdown_time and player_health <= 0:
+        death_text = BIGGER_FONT.render("GAME OVER", True, GREEN)
+        death_text_w = BIGGER_FONT.render("GAME OVER", True, WHITE)
+        WIN.blit(death_text_w, (63, 210))
+        WIN.blit(death_text, (65, 210))
+
+    # Always at the bottom
+    pygame.display.update()
+
+
+# Update the death display -------------------------------------------
+def update_display_2():
+    # Always at the top
+    WIN.fill(BLACK)
 
     # Always at the bottom
     pygame.display.update()
@@ -308,14 +383,15 @@ def update_display_1(player, enemies, player_projectiles, enemy_projectiles, sco
 
 # Main game loop -----------------------------------------------------
 def main():
-
     clock = pygame.time.Clock()
+
+    pygame.mixer.music.load('bin/music/soundtrack.wav')
+    pygame.mixer.music.play(-1)
 
     # Player Variables
     player = pygame.Rect((225, 400), (50, 50))
     player_max_health = 3
     player_health = player_max_health
-    player_score = 0
     scores_arr = []
     next_shoot_time = 0
     player_projectiles = []
@@ -329,8 +405,10 @@ def main():
 
     # Buttons
     play_button = ButtonObject((25, 150), (400, 34), BLACK, BLACK, "CLICK TO START GAME", WHITE, GREEN)
-    exit_button = ButtonObject((175, 200), (100, 40), BLACK, BLACK, "EXIT", WHITE, RED)
-    buttons = [play_button, exit_button]
+    endless_mode_button = ButtonObject((95, 200), (255, 34), BLACK, BLACK, "ENDLESS MODE", WHITE, GREEN)
+    high_scores_button = ButtonObject((105, 250), (240, 34), BLACK, BLACK, "HIGH SCORES", WHITE, GREEN)
+    exit_button = ButtonObject((175, 300), (100, 40), BLACK, BLACK, "EXIT", WHITE, RED)
+    buttons = [play_button, endless_mode_button, high_scores_button, exit_button]
 
     # Enemies
     enemies = []
@@ -359,15 +437,22 @@ def main():
         # Manage the events here ------------------------------
         for event in event_list:
             if event.type == play_button.b_event:
+                BUTTON_CLICK.play()
                 scene_manager.change_scene(Scenes.game_scene)
             elif event.type == exit_button.b_event:
+                BUTTON_CLICK.play()
                 run = False
                 pygame.quit()
                 sys.exit()
+            elif event.type == high_scores_button.b_event:
+                BUTTON_CLICK.play()
+            elif event.type == endless_mode_button.b_event:
+                BUTTON_CLICK.play()
             if event.type == PLAYER_SHOT:
                 next_shoot_time = pygame.time.get_ticks() + 1000
             if event.type == PLAYER_HIT:
                 player_health -= 1
+                SPACESHIP_HIT.play()
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
@@ -394,21 +479,32 @@ def main():
             handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, scores_arr, player_health)
             player_score = update_score(scores_arr)
 
-            if len(enemies) == 0:
+            if len(enemies) == 0 and player_health > 0:
                 if countdown_timer == 0:
-                    countdown_timer = pygame.time.get_ticks() + 3000
+                    countdown_timer = pygame.time.get_ticks() + 2500
                 if pygame.time.get_ticks() >= countdown_timer:
                     countdown_timer = 0
                     current_level += 1
                     level_string = 'level' + str(current_level)
                     load_level(data, enemies, level_string)
+            if player_health <= 0:
+                if countdown_timer == 0:
+                    countdown_timer = pygame.time.get_ticks() + 2500
+                if pygame.time.get_ticks() >= countdown_timer:
+                    countdown_timer = 0
 
             # Enemies Update
+            decent_enemies(enemies)
             for enemy in enemies:
                 enemy.update(enemy_projectiles, enemies)
 
             # Always at the bottom
-            update_display_1(player, enemies, player_projectiles, enemy_projectiles, player_score, player_health, countdown_timer)
+            update_display_1(player, enemies, player_projectiles, enemy_projectiles, player_score, player_health,
+                             countdown_timer)
+        elif current_scene == Scenes.death_scene:
+
+            # Always at the bottom
+            update_display_2()
 
 
 if __name__ == '__main__':
