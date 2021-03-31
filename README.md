@@ -1,11 +1,10 @@
 # Space Invaders
 
- Space invaders game made in python using pygame module. It's almost done, I'll add the 
- endless mode soon after that game is pretty much done.
+ Space invaders game made in python using pygame module. It's pretty much done. Game 
+ has two game modes one of is the Normal game mode which is kinda easier other one is
+ the Endless mode which is a bit more challenging and has procedural generated levels.
  
 ## What's missing?
 
-- Endless mode
 - Boss fight
-- Local high scores
 - Upgrades after levels
