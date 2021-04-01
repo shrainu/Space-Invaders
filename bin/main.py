@@ -10,38 +10,38 @@ pygame.init()
 pygame.mixer.music.set_volume(0.5)
 
 # Sprites
-INVADER_BASIC = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_basic.png'))
+INVADER_BASIC = pygame.image.load(os.path.join('assets', 'space_invader_basic.png'))
 INVADER_BASIC = pygame.transform.scale(INVADER_BASIC, (48, 48))
-INVADER_BASIC_W = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_basic_w.png'))
+INVADER_BASIC_W = pygame.image.load(os.path.join('assets', 'space_invader_basic_w.png'))
 INVADER_BASIC_W = pygame.transform.scale(INVADER_BASIC_W, (48, 48))
-INVADER_RANGER = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_ranger.png'))
+INVADER_RANGER = pygame.image.load(os.path.join('assets', 'space_invader_ranger.png'))
 INVADER_RANGER = pygame.transform.scale(INVADER_RANGER, (48, 48))
-INVADER_RANGER_W = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_ranger_w.png'))
+INVADER_RANGER_W = pygame.image.load(os.path.join('assets', 'space_invader_ranger_w.png'))
 INVADER_RANGER_W = pygame.transform.scale(INVADER_RANGER_W, (48, 48))
-INVADER_RANGER_S = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_ranger.png'))
-INVADER_TANK = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_tank.png'))
+INVADER_RANGER_S = pygame.image.load(os.path.join('assets', 'space_invader_ranger.png'))
+INVADER_TANK = pygame.image.load(os.path.join('assets', 'space_invader_tank.png'))
 INVADER_TANK = pygame.transform.scale(INVADER_TANK, (48, 48))
-INVADER_TANK_W = pygame.image.load(os.path.join('bin', 'assets', 'space_invader_tank_w.png'))
+INVADER_TANK_W = pygame.image.load(os.path.join('assets', 'space_invader_tank_w.png'))
 INVADER_TANK_W = pygame.transform.scale(INVADER_TANK_W, (48, 48))
-PLAYER_SPRITE = pygame.image.load(os.path.join('bin', 'assets', 'player_sprite.png'))
+PLAYER_SPRITE = pygame.image.load(os.path.join('assets', 'player_sprite.png'))
 PLAYER_SPRITE = pygame.transform.scale(PLAYER_SPRITE, (48, 48))
-PLAYER_SPRITE_G = pygame.image.load(os.path.join('bin', 'assets', 'player_sprite_g.png'))
+PLAYER_SPRITE_G = pygame.image.load(os.path.join('assets', 'player_sprite_g.png'))
 PLAYER_SPRITE_G = pygame.transform.scale(PLAYER_SPRITE_G, (48, 48))
-PLAYER_SPRITE_S = pygame.image.load(os.path.join('bin', 'assets', 'player_sprite.png'))
-PLAYER_SPRITE_SG = pygame.image.load(os.path.join('bin', 'assets', 'player_sprite_g.png'))
-DEATH_SPRITE = pygame.image.load(os.path.join('bin', 'assets', 'blast.png'))
+PLAYER_SPRITE_S = pygame.image.load(os.path.join('assets', 'player_sprite.png'))
+PLAYER_SPRITE_SG = pygame.image.load(os.path.join('assets', 'player_sprite_g.png'))
+DEATH_SPRITE = pygame.image.load(os.path.join('assets', 'blast.png'))
 DEATH_SPRITE = pygame.transform.scale(DEATH_SPRITE, (48, 48))
-DEATH_SPRITE_W = pygame.image.load(os.path.join('bin', 'assets', 'blast_w.png'))
+DEATH_SPRITE_W = pygame.image.load(os.path.join('assets', 'blast_w.png'))
 DEATH_SPRITE_W = pygame.transform.scale(DEATH_SPRITE_W, (48, 48))
 
 # Sound effects
-SPACESHIP_FIRE = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_fire.mp3'))
+SPACESHIP_FIRE = pygame.mixer.Sound(os.path.join('sfx', 'spaceship_fire.mp3'))
 SPACESHIP_FIRE.set_volume(0.25)
-SPACESHIP_EXPLODE = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_explode.mp3'))
+SPACESHIP_EXPLODE = pygame.mixer.Sound(os.path.join('sfx', 'spaceship_explode.mp3'))
 SPACESHIP_EXPLODE.set_volume(0.25)
-SPACESHIP_HIT = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'spaceship_hit.mp3'))
+SPACESHIP_HIT = pygame.mixer.Sound(os.path.join('sfx', 'spaceship_hit.mp3'))
 SPACESHIP_HIT.set_volume(0.5)
-BUTTON_CLICK = pygame.mixer.Sound(os.path.join('bin', 'sfx', 'button_click.mp3'))
+BUTTON_CLICK = pygame.mixer.Sound(os.path.join('sfx', 'button_click.mp3'))
 
 # Screen variables
 WIDTH, HEIGHT = 450, 450
@@ -58,8 +58,8 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
 # Fonts
-MAIN_FONT = pygame.font.Font(os.path.join('bin', 'assets', 'font', 're-do', 're-do.ttf'), 10)
-BIGGER_FONT = pygame.font.Font(os.path.join('bin', 'assets', 'font', 're-do', 're-do.ttf'), 18)
+MAIN_FONT = pygame.font.Font(os.path.join('assets', 'font', 're-do', 're-do.ttf'), 10)
+BIGGER_FONT = pygame.font.Font(os.path.join('assets', 'font', 're-do', 're-do.ttf'), 18)
 
 # Map '#' = Common, '@' = Ranger, '$' = Tank
 level0 = [[".", ".", ".", ".", ".", ".", ".", ".", ".", "0"],
@@ -77,6 +77,7 @@ level0 = [[".", ".", ".", ".", ".", ".", ".", ".", ".", "0"],
 VELOCITY = 5
 PLAYER_SHOT = pygame.USEREVENT + 1
 PLAYER_HIT = pygame.USEREVENT + 2
+PLAYER_KILL = pygame.USEREVENT + 3
 
 
 # Scenes
@@ -267,7 +268,7 @@ def update_high_scores(high_scores):
     y = 100
     n = 1
     high_scores.clear()
-    with open(os.path.join('bin', 'high_scores.json')) as h_jsn:
+    with open(os.path.join('high_scores.json')) as h_jsn:
         score_data = json.load(h_jsn)
     for score in score_data['endless_mode']:
         temp_arr.append(HighScore(score, (20, y), n, "ENDLESS"))
@@ -303,6 +304,13 @@ def decent_enemies(enemies):
                 each.decent()
 
 
+# To see if player collided with any enemy
+def handle_player_collision(player, player_health, enemies):
+    for enemy in enemies:
+        if player.colliderect(enemy) and player_health > 0:
+            pygame.event.post(pygame.event.Event(PLAYER_KILL))
+
+
 # To handle the collision and projectile movement --------------------
 def handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, scores_arr, player_health):
     for projectile in player_projectiles:
@@ -333,17 +341,17 @@ def handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, s
 
 # To save high scores to the high_scores.json ------------------------
 def save_high_scores(high_score, endless_mode=False):
-    with open(os.path.join('bin', 'high_scores.json')) as h_jsn:
+    with open(os.path.join('high_scores.json')) as h_jsn:
         score_data = json.load(h_jsn)
     if not endless_mode:
-        with open(os.path.join('bin', 'high_scores.json'), 'w') as h_jsn:
+        with open(os.path.join('high_scores.json'), 'w') as h_jsn:
             score_data['normal_mode'].append(high_score)
             score_data['normal_mode'].sort(reverse=True)
             while len(score_data['normal_mode']) > 3:
                 score_data['normal_mode'].remove(score_data['normal_mode'][-1])
             json.dump(score_data, h_jsn, indent=2)
     elif endless_mode:
-        with open(os.path.join('bin', 'high_scores.json'), 'w') as h_jsn:
+        with open(os.path.join('high_scores.json'), 'w') as h_jsn:
             score_data['endless_mode'].append(high_score)
             score_data['endless_mode'].sort(reverse=True)
             while len(score_data['endless_mode']) > 3:
@@ -529,7 +537,7 @@ def main(is_mute=False):
     clock = pygame.time.Clock()
 
     # Music variables
-    pygame.mixer.music.load('bin/music/soundtrack.wav')
+    pygame.mixer.music.load('music/soundtrack.wav')
     pygame.mixer.music.play(-1)
     mute = is_mute
 
@@ -574,7 +582,7 @@ def main(is_mute=False):
     high_scores = {}
 
     # Open levels.json
-    with open(os.path.join('bin', 'levels.json')) as jsn:
+    with open(os.path.join('levels.json')) as jsn:
         data = json.load(jsn)
 
     run = True
@@ -626,6 +634,11 @@ def main(is_mute=False):
             if event.type == PLAYER_HIT:
                 player_health -= 1
                 SPACESHIP_HIT.play()
+            if event.type == PLAYER_KILL:
+                player_health -= 100
+                if player_health < 0:
+                    player_health = 0
+                SPACESHIP_HIT.play()
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
@@ -663,6 +676,7 @@ def main(is_mute=False):
             handle_player_input(keys_pressed, player, player_projectiles, next_shoot_time, player_health)
             # Player Update
             handle_projectiles(player, enemies, player_projectiles, enemy_projectiles, scores_arr, player_health)
+            handle_player_collision(player, player_health, enemies)
             player_score = update_score(scores_arr)
 
             # print(endless_mode) - for debugging purposes
